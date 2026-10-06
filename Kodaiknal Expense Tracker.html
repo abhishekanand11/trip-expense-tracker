@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Expense Tracker</title>
+<style>
+  :root {
+    --border: #d9d9d9;
+    --head-bg: #f3f3f3;
+    --accent: #1a73e8;
+    --pos: #0b8043;
+    --neg: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #fafafa;
+    color: #202124;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 28px 0 8px; }
+  .sub { color: #5f6368; font-size: 12px; margin-bottom: 20px; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: middle; }
+  th { background: var(--head-bg); font-weight: bold; white-space: nowrap; }
+  td input, td select {
+    width: 100%; border: none; font-family: inherit; font-size: 13px;
+    padding: 2px; background: transparent;
+  }
+  td input:focus, td select:focus { outline: 1px solid var(--accent); background: #fff; }
+  td input[type="number"] { text-align: right; }
+  .col-date { width: 110px; }
+  .col-amt { width: 90px; }
+  .col-paidby { width: 110px; }
+  .col-involved { width: 190px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 3px; }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #e8f0fe; color: #1a73e8; border-radius: 10px;
+    padding: 2px 6px 2px 8px; font-size: 11.5px; white-space: nowrap;
+  }
+  .tag-remove {
+    border: none; background: none; cursor: pointer; color: #1a73e8;
+    font-size: 11px; padding: 0; line-height: 1;
+  }
+  .tag-remove:hover { color: #a50e0e; }
+  .tag-input { width: 100%; font-size: 12px; }
+  .col-del { width: 32px; text-align: center; }
+  .del-btn {
+    cursor: pointer; border: none; background: none; color: #c62828;
+    font-size: 15px; line-height: 1;
+  }
+  .del-btn:hover { color: #8e0000; }
+  .folks-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .folks-row input {
+    border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px;
+    font-size: 13px; width: 130px;
+  }
+  button {
+    font-family: inherit; font-size: 13px; padding: 6px 12px;
+    border-radius: 5px; border: 1px solid var(--border); background: #fff;
+    cursor: pointer;
+  }
+  button:hover { background: #f1f1f1; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1558b0; }
+  .btn-danger { color: var(--neg); }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .total-row td { font-weight: bold; background: #fafafa; }
+  .net-pos { color: var(--pos); font-weight: bold; }
+  .net-neg { color: var(--neg); font-weight: bold; }
+  .hint { color: #5f6368; font-size: 11.5px; margin-top: 8px; line-height: 1.5; }
+  .footer-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+  .save-status { color: #5f6368; font-size: 12px; }
+  input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Trip Expense Tracker</h1>
+<div class="sub" id="save-status">Changes are saved automatically in this browser.</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Trip Folks</h2>
+  <div class="folks-row" id="folks-row"></div>
+  <div class="hint">List everyone on the trip (up to 8 people). "Paid By" and "Involved Parties" below should use these exact names.</div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Expenses</h2>
+  <table id="expense-table">
+    <thead>
+      <tr>
+        <th class="col-date">Date</th>
+        <th>Item</th>
+        <th class="col-amt">Expense</th>
+        <th class="col-paidby">Paid By</th>
+        <th>Details</th>
+        <th class="col-involved">Involved Parties</th>
+        <th class="col-del"></th>
+      </tr>
+    </thead>
+    <tbody id="expense-body"></tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="2">Total</td>
+        <td id="total-amount">0</td>
+        <td colspan="4"></td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="toolbar">
+    <button id="add-row-btn">+ Add expense row</button>
+  </div>
+  <div class="hint">Leave "Involved Parties" empty if the expense was shared by everyone in Trip Folks. Otherwise type a name and press Enter to tag them &mdash; click the ✕ on a tag to remove it.</div>
+  <datalist id="folks-datalist"></datalist>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Settlement Summary</h2>
+  <table id="summary-table">
+    <thead>
+      <tr>
+        <th>Person</th>
+        <th>Total Paid</th>
+        <th>Total Share</th>
+        <th>Net (+ to receive / - to pay)</th>
+      </tr>
+    </thead>
+    <tbody id="summary-body"></tbody>
+  </table>
+</div>
+
+<div class="footer-actions">
+  <div class="toolbar">
+    <button id="export-btn">Export backup (.json)</button>
+    <button id="import-btn">Import backup</button>
+    <input type="file" id="import-file" accept="application/json">
+  </div>
+  <button class="btn-danger" id="reset-btn">Reset for new trip</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'tripExpenseTracker_v1';
+const MAX_FOLKS = 8;
+
+const DEFAULT_DATA = {
+  tripFolks: ["Piyush", "Abhishek", "Surya"],
+  expenses: [
+    { date: "2026-09-30", item: "Nammakal Hotel Stay", amount: 7502, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-09-30", item: "Dinner Nammakal (One Dine)", amount: 2126, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-01", item: "Lunch (Cloudwalks Homestay)", amount: 6682, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-01", item: "Travel to City (Rented Car)", amount: 500, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-01", item: "Dinner (Aromas of Kodai)", amount: 5135, paidBy: "Surya", details: "", involved: "" },
+    { date: "2026-10-01", item: "Travel to Homestay (Rented Car)", amount: 500, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-02", item: "Snacks (Poombarai)", amount: "", paidBy: "", details: "", involved: "" },
+    { date: "2026-10-02", item: "Boat Ride", amount: 600, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-02", item: "Dinner (Aromas of Kodai)", amount: 3433, paidBy: "Piyush", details: "", involved: "" },
+    { date: "2026-10-03", item: "Lunch (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "", involved: "" },
+    { date: "2026-10-03", item: "Snacks and Tea (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "All covered in homestay single line bill", involved: "" },
+    { date: "2026-10-03", item: "Dinner (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "", involved: "" },
+    { date: "2026-10-04", item: "Lunch (Ponaram Biryani)", amount: 2449, paidBy: "Piyush", details: "", involved: "" }
+  ]
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* ignore corrupt storage */ }
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const el = document.getElementById('save-status');
+  el.textContent = 'Saved ' + new Date().toLocaleTimeString() + ' (stored in this browser)';
+}
+
+function fmt(n) {
+  const r = Math.round(n || 0);
+  return r.toLocaleString('en-US');
+}
+
+function fmtNet(n) {
+  const r = Math.round(n || 0);
+  const sign = r > 0 ? '+' : (r < 0 ? '-' : '');
+  return sign + Math.abs(r).toLocaleString('en-US');
+}
+
+function activeFolks() {
+  return state.tripFolks.map(f => (f || '').trim()).filter(Boolean);
+}
+
+function renderFolks() {
+  const row = document.getElementById('folks-row');
+  row.innerHTML = '';
+  for (let i = 0; i < MAX_FOLKS; i++) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Person ' + (i + 1);
+    input.value = state.tripFolks[i] || '';
+    input.addEventListener('input', (e) => {
+      state.tripFolks[i] = e.target.value;
+      saveState();
+      updatePaidByOptions();
+      updateInvolvedCells();
+      renderSummary();
+    });
+    row.appendChild(input);
+  }
+}
+
+function updatePaidByOptions() {
+  document.querySelectorAll('#expense-body select[data-field="paidBy"]').forEach((sel, idx) => {
+    const exp = state.expenses[idx];
+    if (!exp) return;
+    sel.innerHTML = paidByOptionsHtml(exp.paidBy);
+  });
+}
+
+function involvedListOf(exp) {
+  return (exp.involved || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function involvedCellHtml(exp) {
+  const tags = involvedListOf(exp);
+  const tagsHtml = tags.map(name => `
+    <span class="tag-chip">
+      ${escapeHtml(name)}
+      <button type="button" class="tag-remove" data-name="${escapeAttr(name)}" title="Remove">✕</button>
+    </span>
+  `).join('');
+  return `
+    <div class="tag-list">${tagsHtml}</div>
+    <input type="text" class="tag-input" placeholder="${tags.length ? '' : 'everyone'}" list="folks-datalist" />
+  `;
+}
+
+function bindInvolvedCell(cell, exp) {
+  cell.querySelectorAll('.tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tags = involvedListOf(exp).filter(n => n !== btn.dataset.name);
+      exp.involved = tags.join(', ');
+      saveState();
+      refreshInvolvedCell(cell, exp);
+      renderSummary();
+    });
+  });
+
+  const input = cell.querySelector('.tag-input');
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const typed = input.value.trim();
+    if (!typed) return;
+    const match = activeFolks().find(f => f.toLowerCase() === typed.toLowerCase());
+    const tags = involvedListOf(exp);
+    if (match && !tags.includes(match)) {
+      tags.push(match);
+      exp.involved = tags.join(', ');
+      saveState();
+      refreshInvolvedCell(cell, exp);
+      renderSummary();
+    } else {
+      input.value = '';
+    }
+  });
+}
+
+function refreshInvolvedCell(cell, exp) {
+  cell.innerHTML = involvedCellHtml(exp);
+  bindInvolvedCell(cell, exp);
+  cell.querySelector('.tag-input').focus();
+}
+
+function updateInvolvedCells() {
+  document.querySelectorAll('#expense-body [data-field="involved-cell"]').forEach((cell, idx) => {
+    const exp = state.expenses[idx];
+    if (!exp) return;
+    cell.innerHTML = involvedCellHtml(exp);
+    bindInvolvedCell(cell, exp);
+  });
+  updateFolksDatalist();
+}
+
+function updateFolksDatalist() {
+  const list = document.getElementById('folks-datalist');
+  list.innerHTML = activeFolks()
+    .map(f => `<option value="${escapeAttr(f)}"></option>`)
+    .join('');
+}
+
+function updateTotal() {
+  let total = 0;
+  state.expenses.forEach(exp => { total += parseFloat(exp.amount) || 0; });
+  document.getElementById('total-amount').textContent = fmt(total);
+}
+
+function paidByOptionsHtml(selected) {
+  const folks = activeFolks();
+  let html = '<option value=""' + (selected ? '' : ' selected') + '></option>';
+  folks.forEach(f => {
+    html += `<option value="${escapeAttr(f)}"${f === selected ? ' selected' : ''}>${escapeHtml(f)}</option>`;
+  });
+  return html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/"/g, '&quot;');
+}
+
+function renderExpenseTable() {
+  const body = document.getElementById('expense-body');
+  body.innerHTML = '';
+  let total = 0;
+
+  state.expenses.forEach((exp, idx) => {
+    total += parseFloat(exp.amount) || 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-date"><input type="date" value="${exp.date || ''}" data-field="date" /></td>
+      <td><input type="text" value="${escapeAttr(exp.item || '')}" data-field="item" /></td>
+      <td class="col-amt"><input type="number" value="${exp.amount === '' || exp.amount === undefined ? '' : exp.amount}" data-field="amount" /></td>
+      <td class="col-paidby"><select data-field="paidBy">${paidByOptionsHtml(exp.paidBy)}</select></td>
+      <td><input type="text" value="${escapeAttr(exp.details || '')}" data-field="details" /></td>
+      <td class="col-involved" data-field="involved-cell">${involvedCellHtml(exp)}</td>
+      <td class="col-del"><button class="del-btn" title="Delete row" data-idx="${idx}">✕</button></td>
+    `;
+    tr.querySelectorAll('[data-field]:not([data-field="involved-cell"])').forEach(el => {
+      el.addEventListener('input', () => {
+        exp[el.dataset.field] = el.value;
+        saveState();
+        updateTotal();
+        renderSummary();
+      });
+    });
+    bindInvolvedCell(tr.querySelector('[data-field="involved-cell"]'), exp);
+    tr.querySelector('.del-btn').addEventListener('click', () => {
+      state.expenses.splice(idx, 1);
+      saveState();
+      renderExpenseTable();
+      renderSummary();
+    });
+    body.appendChild(tr);
+  });
+
+  document.getElementById('total-amount').textContent = fmt(total);
+}
+
+function computeSettlement() {
+  const folks = activeFolks();
+  const paid = {};
+  const share = {};
+  folks.forEach(f => { paid[f] = 0; share[f] = 0; });
+
+  state.expenses.forEach(exp => {
+    const amt = parseFloat(exp.amount) || 0;
+    let involved = (exp.involved || '').trim()
+      ? exp.involved.split(',').map(s => s.trim()).filter(Boolean)
+      : folks.slice();
+    involved = involved.filter(p => folks.includes(p));
+    if (involved.length === 0) involved = folks.slice();
+    const n = involved.length || 1;
+    involved.forEach(p => { share[p] = (share[p] || 0) + amt / n; });
+
+    const payer = (exp.paidBy || '').trim();
+    if (payer && folks.includes(payer)) {
+      paid[payer] = (paid[payer] || 0) + amt;
+    }
+  });
+
+  return folks.map(p => ({
+    person: p,
+    paid: paid[p] || 0,
+    share: share[p] || 0,
+    net: (paid[p] || 0) - (share[p] || 0)
+  }));
+}
+
+function renderSummary() {
+  const body = document.getElementById('summary-body');
+  body.innerHTML = '';
+  const rows = computeSettlement();
+  if (rows.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" style="color:#5f6368">Add names under Trip Folks to see the settlement summary.</td></tr>';
+    return;
+  }
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const netClass = r.net > 0 ? 'net-pos' : (r.net < 0 ? 'net-neg' : '');
+    tr.innerHTML = `
+      <td>${escapeHtml(r.person)}</td>
+      <td>${fmt(r.paid)}</td>
+      <td>${fmt(r.share)}</td>
+      <td class="${netClass}">${fmtNet(r.net)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+document.getElementById('add-row-btn').addEventListener('click', () => {
+  state.expenses.push({ date: '', item: '', amount: '', paidBy: '', details: '', involved: '' });
+  saveState();
+  renderExpenseTable();
+  renderSummary();
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (!confirm('This clears all expenses and Trip Folks to start a new trip. Continue?')) return;
+  state = { tripFolks: ['', '', ''], expenses: [] };
+  saveState();
+  renderFolks();
+  updateInvolvedCells();
+  renderExpenseTable();
+  renderSummary();
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'trip-expense-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed.tripFolks || !parsed.expenses) throw new Error('bad format');
+      state = parsed;
+      saveState();
+      renderFolks();
+      updateInvolvedCells();
+      renderExpenseTable();
+      renderSummary();
+    } catch (err) {
+      alert('Could not read that file as a valid backup.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+renderFolks();
+updateInvolvedCells();
+renderExpenseTable();
+renderSummary();
+</script>
+
+</body>
+</html>
