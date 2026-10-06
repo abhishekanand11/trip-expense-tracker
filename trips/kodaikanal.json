@@ -1,0 +1,19 @@
+{
+  "name": "Kodaikanal 2026",
+  "tripFolks": ["Piyush", "Abhishek", "Surya"],
+  "expenses": [
+    { "date": "2026-09-30", "item": "Nammakal Hotel Stay", "amount": 7502, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-09-30", "item": "Dinner Nammakal (One Dine)", "amount": 2126, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-01", "item": "Lunch (Cloudwalks Homestay)", "amount": 6682, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-01", "item": "Travel to City (Rented Car)", "amount": 500, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-01", "item": "Dinner (Aromas of Kodai)", "amount": 5135, "paidBy": "Surya", "details": "", "involved": "" },
+    { "date": "2026-10-01", "item": "Travel to Homestay (Rented Car)", "amount": 500, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-02", "item": "Snacks (Poombarai)", "amount": "", "paidBy": "", "details": "", "involved": "" },
+    { "date": "2026-10-02", "item": "Boat Ride", "amount": 600, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-02", "item": "Dinner (Aromas of Kodai)", "amount": 3433, "paidBy": "Piyush", "details": "", "involved": "" },
+    { "date": "2026-10-03", "item": "Lunch (Cloudwalks Homestay)", "amount": 0, "paidBy": "", "details": "", "involved": "" },
+    { "date": "2026-10-03", "item": "Snacks and Tea (Cloudwalks Homestay)", "amount": 0, "paidBy": "", "details": "All covered in homestay single line bill", "involved": "" },
+    { "date": "2026-10-03", "item": "Dinner (Cloudwalks Homestay)", "amount": 0, "paidBy": "", "details": "", "involved": "" },
+    { "date": "2026-10-04", "item": "Lunch (Ponaram Biryani)", "amount": 2449, "paidBy": "Piyush", "details": "", "involved": "" }
+  ]
+}

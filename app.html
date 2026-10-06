@@ -20,6 +20,9 @@
     background: #fafafa;
     color: #202124;
   }
+  .top-nav { margin-bottom: 8px; }
+  .top-nav a { color: var(--accent); font-size: 12.5px; text-decoration: none; }
+  .top-nav a:hover { text-decoration: underline; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   h2 { font-size: 15px; margin: 28px 0 8px; }
   .sub { color: #5f6368; font-size: 12px; margin-bottom: 20px; }
@@ -87,7 +90,8 @@
 </head>
 <body>
 
-<h1>Trip Expense Tracker</h1>
+<div class="top-nav"><a href="index.html">&larr; All trips</a></div>
+<h1 id="trip-title">Trip Expense Tracker</h1>
 <div class="sub" id="save-status">Changes are saved automatically in this browser.</div>
 
 <div class="card">
@@ -151,36 +155,30 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'tripExpenseTracker_v1';
+const TRIP = new URLSearchParams(location.search).get('trip');
 const MAX_FOLKS = 8;
 
-const DEFAULT_DATA = {
-  tripFolks: ["Piyush", "Abhishek", "Surya"],
-  expenses: [
-    { date: "2026-09-30", item: "Nammakal Hotel Stay", amount: 7502, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-09-30", item: "Dinner Nammakal (One Dine)", amount: 2126, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-01", item: "Lunch (Cloudwalks Homestay)", amount: 6682, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-01", item: "Travel to City (Rented Car)", amount: 500, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-01", item: "Dinner (Aromas of Kodai)", amount: 5135, paidBy: "Surya", details: "", involved: "" },
-    { date: "2026-10-01", item: "Travel to Homestay (Rented Car)", amount: 500, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-02", item: "Snacks (Poombarai)", amount: "", paidBy: "", details: "", involved: "" },
-    { date: "2026-10-02", item: "Boat Ride", amount: 600, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-02", item: "Dinner (Aromas of Kodai)", amount: 3433, paidBy: "Piyush", details: "", involved: "" },
-    { date: "2026-10-03", item: "Lunch (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "", involved: "" },
-    { date: "2026-10-03", item: "Snacks and Tea (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "All covered in homestay single line bill", involved: "" },
-    { date: "2026-10-03", item: "Dinner (Cloudwalks Homestay)", amount: 0, paidBy: "", details: "", involved: "" },
-    { date: "2026-10-04", item: "Lunch (Ponaram Biryani)", amount: 2449, paidBy: "Piyush", details: "", involved: "" }
-  ]
-};
+if (!TRIP) {
+  document.body.innerHTML = '<p style="font-family:Arial,sans-serif;padding:24px;">No trip selected. <a href="index.html">Go back to the trip list</a>.</p>';
+  throw new Error('No trip selected');
+}
 
-let state = loadState();
+// Each trip gets its own localStorage bucket so multiple trip pages on the
+// same origin never overwrite each other's data.
+const STORAGE_KEY = 'tripExpenseTracker_v1_' + TRIP;
 
-function loadState() {
+let state = null;
+
+async function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) { /* ignore corrupt storage */ }
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+
+  // No saved edits yet — seed from this trip's starting data file.
+  const res = await fetch('trips/' + TRIP + '.json');
+  if (!res.ok) throw new Error('Could not load trip data for "' + TRIP + '"');
+  return res.json();
 }
 
 function saveState() {
@@ -422,8 +420,8 @@ document.getElementById('add-row-btn').addEventListener('click', () => {
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (!confirm('This clears all expenses and Trip Folks to start a new trip. Continue?')) return;
-  state = { tripFolks: ['', '', ''], expenses: [] };
+  if (!confirm('This clears all expenses and Trip Folks for this trip. Continue?')) return;
+  state = { name: state.name, tripFolks: ['', '', ''], expenses: [] };
   saveState();
   renderFolks();
   updateInvolvedCells();
@@ -436,7 +434,7 @@ document.getElementById('export-btn').addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'trip-expense-backup.json';
+  a.download = TRIP + '-expense-backup.json';
   a.click();
   URL.revokeObjectURL(url);
 });
@@ -467,10 +465,19 @@ document.getElementById('import-file').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-renderFolks();
-updateInvolvedCells();
-renderExpenseTable();
-renderSummary();
+(async function init() {
+  try {
+    state = await loadState();
+  } catch (err) {
+    document.body.innerHTML = '<p style="font-family:Arial,sans-serif;padding:24px;">' + escapeHtml(err.message) + ' &mdash; <a href="index.html">Go back to the trip list</a>.</p>';
+    return;
+  }
+  document.getElementById('trip-title').textContent = state.name || TRIP;
+  renderFolks();
+  updateInvolvedCells();
+  renderExpenseTable();
+  renderSummary();
+})();
 </script>
 
 </body>

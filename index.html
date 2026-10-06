@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Expense Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #fafafa;
+    color: #202124;
+    max-width: 480px;
+  }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  li a {
+    display: block;
+    padding: 14px 16px;
+    color: #1a73e8;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  li a:hover { background: #f1f1f1; }
+  .empty { color: #5f6368; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>Trips</h1>
+<ul id="trip-list"></ul>
+
+<script>
+fetch('trips/manifest.json')
+  .then(res => res.json())
+  .then(trips => {
+    const list = document.getElementById('trip-list');
+    if (!trips.length) {
+      list.innerHTML = '<li class="empty" style="border:none;background:none;padding:8px 0;">No trips yet.</li>';
+      return;
+    }
+    list.innerHTML = trips.map(t =>
+      `<li><a href="app.html?trip=${encodeURIComponent(t.slug)}">${t.name}</a></li>`
+    ).join('');
+  })
+  .catch(() => {
+    document.getElementById('trip-list').innerHTML = '<li class="empty" style="border:none;background:none;padding:8px 0;">Could not load trip list.</li>';
+  });
+</script>
+
+</body>
+</html>
